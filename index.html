@@ -994,6 +994,8 @@ function cancelarSol(id){
   alert('🚫 Cita cancelada y horario liberado');
   renderAdminPanel();
   renderBloqueados();
+  var ma = getMesAnio();
+  renderServiciosDelMes(ma.mes, ma.anio);
 }
 
 function rechazarSol(id){
@@ -1452,7 +1454,7 @@ function renderPanelClientes(){
 
   renderGastosDelMes(ma.mes, ma.anio);
   renderGraficaMeses();
-  renderGraficaServicios();
+  renderServiciosDelMes(ma.mes, ma.anio);
   renderListaClientes();
 }
 
@@ -1529,43 +1531,34 @@ function renderGraficaMeses(){
   if(gl) gl.innerHTML=labels;
 }
 
-function renderGraficaServicios(){
-  var c = document.getElementById('grafica_servicios');
-  // Count items from confirmed solicitudes
-  var counts={};
-  solicitudes.filter(function(s){return s.estado==='confirmada';}).forEach(function(s){
-    var items=(s.items||[]);
-    // Also try to parse from historial text if items not stored
+function renderServiciosDelMes(mes, anio){
+  var el = document.getElementById('lista_servicios_mes');
+  if(!el) return;
+  var servsDelMes = solicitudes.filter(function(s){
+    if(s.estado!=='confirmada') return false;
+    var d = new Date(s.fecha+'T12:00:00');
+    if(mes==='anual') return d.getFullYear()===anio;
+    return d.getMonth()===mes && d.getFullYear()===anio;
   });
-  // Count from clientes historial
-  clientes.forEach(function(cl){
-    (cl.historial||[]).forEach(function(h){
-      // Generic - count visits per client
-    });
-  });
-  // Simpler: count by nombre from solicitudes if available
-  var srvCount={'Sillones':0,'Colchones':0,'Tapetes':0,'Salas L':0,'Carros':0,'Sillas':0,'Otros':0};
-  solicitudes.filter(function(s){return s.estado==='confirmada';}).forEach(function(s){
-    var total=parseFloat((s.total||'0').replace(/[^0-9.]/g,''))||0;
-    if(total>0) srvCount['Otros']++;
-  });
-  // Better: show top clients instead
-  var sorted = clientes.slice().sort(function(a,b){return (b.totalGastado||0)-(a.totalGastado||0);}).slice(0,5);
-  if(!sorted.length){c.innerHTML='<p style="font-size:0.8rem;color:var(--muted);text-align:center;">Sin datos aún</p>';return;}
-  var maxV = sorted[0].totalGastado||1;
+  if(!servsDelMes.length){
+    el.innerHTML='<p style="text-align:center;color:var(--muted);padding:8px;">Sin servicios confirmados este mes</p>';
+    return;
+  }
   var h='';
-  sorted.forEach(function(cl){
-    var pct=Math.round(((cl.totalGastado||0)/maxV)*100);
-    var freq=cl.visitas>1?'⭐ ':'';
-    h+='<div style="margin-bottom:8px;">'
-      +'<div style="display:flex;justify-content:space-between;font-size:0.76rem;font-weight:700;margin-bottom:3px;">'
-      +'<span>'+freq+cl.nombre+'</span><span style="color:var(--blue-dark);">$'+(cl.totalGastado||0).toLocaleString('es-MX')+'</span></div>'
-      +'<div style="background:#e0f0fb;border-radius:4px;height:8px;">'
-      +'<div style="background:var(--blue);border-radius:4px;height:8px;width:'+pct+'%;"></div></div>'
+  servsDelMes.forEach(function(s){
+    var total = parseFloat((s.total||'0').replace(/[^0-9.]/g,''))||0;
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;border:1.5px solid #d0e8f5;border-radius:10px;padding:8px 10px;margin-bottom:6px;background:#f8fbff;">'
+      +'<div style="flex:1;">'
+      +'<div style="font-weight:800;color:var(--blue-dark);font-size:0.8rem;">'+s.nombre+'</div>'
+      +'<div style="color:var(--muted);font-size:0.72rem;">'+s.fechaStr+' · '+s.hora+(s.manual?' · Manual':'')+'</div>'
+      +'</div>'
+      +'<div style="font-weight:800;color:#28a745;font-size:0.82rem;margin:0 8px;">$'+total.toLocaleString('es-MX')+'</div>'
+      +'<button onclick="cancelarSol('+s.id+')" style="background:#fff0f0;border:1.5px solid #ffcccc;border-radius:8px;padding:4px 8px;font-size:0.75rem;font-weight:800;color:#dc3545;cursor:pointer;">✕ Cancelar</button>'
       +'</div>';
   });
-  c.innerHTML=h;
+  el.innerHTML=h;
 }
+
 
 function renderListaClientes(){
   var c = document.getElementById('lista_clientes');
