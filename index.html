@@ -397,6 +397,8 @@
             <option value="redes">📱 Redes / Publicidad</option>
             <option value="materia">🧴 Materia prima</option>
             <option value="trabajador">👷 Trabajador</option>
+            <option value="gasolina">⛽ Gasolina</option>
+            <option value="nomina">👷 Nómina trabajador</option>
             <option value="otros">📦 Otros</option>
           </select>
           <input type="number" id="gasto_monto" placeholder="Monto $" style="margin-top:0;font-size:0.78rem;">
@@ -1447,7 +1449,7 @@ var solicitudes=JSON.parse(localStorage.getItem('cmhmo_sols')||'[]');
 var gastos=JSON.parse(localStorage.getItem('cmhmo_gastos')||'[]');
 var MESES_ES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 var MESES_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-var CAT_NAMES = {redes:'📱 Redes/Publicidad', materia:'🧴 Materia prima', trabajador:'👷 Trabajador', otros:'📦 Otros'};
+var CAT_NAMES = {redes:'📱 Redes/Publicidad', materia:'🧴 Materia prima', trabajador:'👷 Trabajador', gasolina:'⛽ Gasolina', nomina:'👷 Nómina trabajador', otros:'📦 Otros'};
 
 function getMesAnio(){
   var raw = document.getElementById('sel_mes').value;
