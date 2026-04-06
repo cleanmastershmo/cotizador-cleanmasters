@@ -1045,7 +1045,7 @@ function renderAdminPanel(){
 function confirmarSol(id){
   var sol=solicitudes.find(function(s){return s.id===id;});
   if(!sol) return;
-  var dur=parseFloat(prompt('Servicio de '+sol.nombre+' - Duración en horas (0.5=30min, 1=1h, 1.5, 2, 3, 4, 8=todo el día):','2'));
+  var dur=parseFloat(prompt('Servicio de '+sol.nombre+' - Duración en horas (0.5=30min, 1=1h, 1.5, 2, 3, 4, 8=todo el día):','1'));
   if(isNaN(dur)||dur<=0) return;
   var slotMap={'8:00 AM':8,'8:30 AM':8.5,'9:00 AM':9,'9:30 AM':9.5,'10:00 AM':10,'10:30 AM':10.5,'11:00 AM':11,'11:30 AM':11.5,'12:00 PM':12,'12:30 PM':12.5,'1:00 PM':13,'1:30 PM':13.5,'2:00 PM':14,'2:30 PM':14.5,'3:00 PM':15,'3:30 PM':15.5,'4:00 PM':16,'4:30 PM':16.5,'5:00 PM':17};
   var startH=slotMap[sol.hora]||8;
@@ -1126,7 +1126,7 @@ function registrarCitaManual(){
 function bloquearHorario(){
   var fecha=document.getElementById('blk_fecha').value;
   var hora=document.getElementById('blk_hora').value;
-  var dur=parseInt(document.getElementById('blk_duracion').value)||2;
+  var dur=parseFloat(document.getElementById('blk_duracion').value)||1;
   var nota=document.getElementById('blk_nota').value.trim()||'Bloqueado';
   if(!fecha||!hora){alert('Selecciona fecha y hora');return;}
   var slotMap={'8:00 AM':8,'8:30 AM':8.5,'9:00 AM':9,'9:30 AM':9.5,'10:00 AM':10,'10:30 AM':10.5,'11:00 AM':11,'11:30 AM':11.5,'12:00 PM':12,'12:30 PM':12.5,'1:00 PM':13,'1:30 PM':13.5,'2:00 PM':14,'2:30 PM':14.5,'3:00 PM':15,'3:30 PM':15.5,'4:00 PM':16,'4:30 PM':16.5,'5:00 PM':17};
