@@ -25,49 +25,6 @@
       };
       firebase.initializeApp(firebaseConfig);
       db = firebase.firestore();
-      // Real-time listeners — sync changes from any device instantly
-      db.collection('solicitudes').orderBy('id','desc').limit(500).onSnapshot(function(snap){
-        snap.docChanges().forEach(function(change){
-          var fs = change.doc.data();
-          if(change.type==='removed'){
-            solicitudes = solicitudes.filter(function(s){return s.id!=fs.id;});
-          } else {
-            var idx = solicitudes.findIndex(function(s){return s.id==fs.id;});
-            if(idx<0) solicitudes.push(fs); else solicitudes[idx]=fs;
-          }
-        });
-        localStorage.setItem('cmhmo_sols', JSON.stringify(solicitudes));
-        if(typeof renderAdminPanel==='function') renderAdminPanel();
-        if(typeof renderPanelClientes==='function' && document.getElementById('panel_clientes') && document.getElementById('panel_clientes').style.display!=='none') renderPanelClientes();
-      }, function(err){ console.log('Solicitudes listener error:', err); });
-
-      db.collection('gastos').onSnapshot(function(snap){
-        snap.docChanges().forEach(function(change){
-          var fg = change.doc.data();
-          if(change.type==='removed'){
-            gastos = gastos.filter(function(g){return g.id!=fg.id;});
-          } else {
-            var idx = gastos.findIndex(function(g){return g.id==fg.id;});
-            if(idx<0) gastos.push(fg); else gastos[idx]=fg;
-          }
-        });
-        localStorage.setItem('cmhmo_gastos', JSON.stringify(gastos));
-      }, function(err){ console.log('Gastos listener error:', err); });
-
-      db.collection('bloqueados').onSnapshot(function(snap){
-        snap.docChanges().forEach(function(change){
-          var fb = change.doc.data();
-          if(change.type==='removed'){
-            horariosBloqueados = horariosBloqueados.filter(function(b){return b.id!=fb.id;});
-          } else {
-            var idx = horariosBloqueados.findIndex(function(b){return b.id==fb.id;});
-            if(idx<0) horariosBloqueados.push(fb); else horariosBloqueados[idx]=fb;
-          }
-        });
-        localStorage.setItem('cmhmo_bloq', JSON.stringify(horariosBloqueados));
-        if(typeof renderBloqueados==='function') renderBloqueados();
-      }, function(err){ console.log('Bloqueados listener error:', err); });
-
     } catch(e) { console.log('Firebase no disponible, modo local'); }
   </script>
 </head>
@@ -1826,6 +1783,55 @@ const dd=String(hoy.getDate()).padStart(2,'0');
 document.getElementById('f_fecha').min=`${yyyy}-${mm}-${dd}`;
 
 renderTapetes();renderSalasL();calcular();renderAdminPanel();renderBloqueados();
+
+// ── Real-time Firestore listeners ──────────────────────────────
+(function initListeners(){
+  if(!db) return;
+  db.collection('solicitudes').orderBy('id','desc').limit(500).onSnapshot(function(snap){
+    snap.docChanges().forEach(function(change){
+      var d=change.doc.data();
+      if(change.type==='removed'){
+        solicitudes=solicitudes.filter(function(s){return s.id!=d.id;});
+      } else {
+        var i=solicitudes.findIndex(function(s){return s.id==d.id;});
+        if(i<0) solicitudes.push(d); else solicitudes[i]=d;
+      }
+    });
+    localStorage.setItem('cmhmo_sols',JSON.stringify(solicitudes));
+    renderAdminPanel();
+    var pc=document.getElementById('panel_clientes');
+    if(pc && pc.style.display!=='none') renderPanelClientes();
+  },function(e){console.log('sols listener:',e);});
+
+  db.collection('gastos').onSnapshot(function(snap){
+    snap.docChanges().forEach(function(change){
+      var d=change.doc.data();
+      if(change.type==='removed'){
+        gastos=gastos.filter(function(g){return g.id!=d.id;});
+      } else {
+        var i=gastos.findIndex(function(g){return g.id==d.id;});
+        if(i<0) gastos.push(d); else gastos[i]=d;
+      }
+    });
+    localStorage.setItem('cmhmo_gastos',JSON.stringify(gastos));
+    var pc2=document.getElementById('panel_clientes');
+    if(pc2 && pc2.style.display!=='none') renderPanelClientes();
+  },function(e){console.log('gastos listener:',e);});
+
+  db.collection('bloqueados').onSnapshot(function(snap){
+    snap.docChanges().forEach(function(change){
+      var d=change.doc.data();
+      if(change.type==='removed'){
+        horariosBloqueados=horariosBloqueados.filter(function(b){return b.id!=d.id;});
+      } else {
+        var i=horariosBloqueados.findIndex(function(b){return b.id==d.id;});
+        if(i<0) horariosBloqueados.push(d); else horariosBloqueados[i]=d;
+      }
+    });
+    localStorage.setItem('cmhmo_bloq',JSON.stringify(horariosBloqueados));
+    renderBloqueados();
+  },function(e){console.log('bloq listener:',e);});
+})();
 // Set default month/year selector
 (function(){
   var now=new Date();
