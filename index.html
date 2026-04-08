@@ -1106,10 +1106,16 @@ function cancelarSol(id){
   // Remove blocked slots for this appointment
   var sol=solicitudes.find(function(s){return s.id===id;});
   if(sol){
+    var toRemove=horariosBloqueados.filter(function(b){
+      return b.fecha===sol.fecha && b.nota && b.nota.indexOf(sol.nombre)>=0;
+    });
     horariosBloqueados=horariosBloqueados.filter(function(b){
       return !(b.fecha===sol.fecha && b.nota && b.nota.indexOf(sol.nombre)>=0);
     });
     localStorage.setItem('cmhmo_bloq',JSON.stringify(horariosBloqueados));
+    toRemove.forEach(function(b){
+      try{if(db) db.collection('bloqueados').doc(String(b.id)).delete();}catch(e){}
+    });
   }
   alert('🚫 Cita cancelada y horario liberado');
   renderAdminPanel();
