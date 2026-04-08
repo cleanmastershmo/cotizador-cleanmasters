@@ -776,9 +776,7 @@ function renderAiResults(){
           <span class="ai-item-price">${(it.price*it.qty).toLocaleString('es-MX')}</span>
           ${isPriv?`
           <div class="ai-qty">
-            <button class="aq-btn" onclick="changeAiQty(${p.id},${idx},-1)">−</button>
-            <span class="aq-num">${it.qty}</span>
-            <button class="aq-btn" onclick="changeAiQty(${p.id},${idx},1)">+</button>
+            <span class="aq-num" style="color:var(--muted);font-size:0.75rem;">${it.qty>1?'x'+it.qty:''}</span>
           </div>
           <div class="conf-toggle">
             <input type="checkbox" id="ai_${p.id}_${idx}" ${it.confirmed?'checked':''} onchange="toggleAiItem(${p.id},${idx},this.checked)">
@@ -802,22 +800,22 @@ function calcular(){
     if(qty>0){
       let price=PRICES[k];
       if(['col_ind','col_mat','col_queen','col_king'].includes(k)&&dobleLado) price+=150;
-      items.push({name:qty>1?(NAMES[k]+' (x'+qty+')'):NAMES[k],price:price*qty,source:'manual'});
+      items.push({name:qty>1?(NAMES[k]+' (x'+qty+')'):NAMES[k],price:price*qty,source:'qty',key:k,qty:qty});
     }
   });
   salasL.forEach((s,i)=>{
     const p=parseInt(s.tipo)||0;
-    if(p>0){const n={750:'Chica',1100:'Mediana',1400:'Grande'};items.push({name:'Sala en L '+n[p]+' #'+(i+1),price:p,source:'manual'});}
+    if(p>0){const n={750:'Chica',1100:'Mediana',1400:'Grande'};items.push({name:'Sala en L '+n[p]+' #'+(i+1),price:p,source:'salaL',key:s.id});}
   });
   tapetes.forEach(t=>{
     const p=tapetePrice(t.tipo,t.medida);
-    if(p>0){const tn={comercial:'Comercial',oriental:'Oriental',fibras:'Fibras naturales'};items.push({name:'Tapete '+(tn[t.tipo]||'')+' ('+t.medida+' m²)',price:p,source:'manual'});}
+    if(p>0){const tn={comercial:'Comercial',oriental:'Oriental',fibras:'Fibras naturales'};items.push({name:'Tapete '+(tn[t.tipo]||'')+' ('+t.medida+' m²)',price:p,source:'tapete',key:t.id});}
   });
-  if(escOn) items.push({name:'Escaleras (11–17 peldaños)',price:800,source:'manual'});
+  if(escOn) items.push({name:'Escaleras (11–17 peldaños)',price:800,source:'escalera'});
   if((qtys['carro']||0)>0&&carroPrice>0){
     const qty=qtys['carro'];
     const cn={600:'Sedán/Compacto',700:'SUV Mediana',900:'Camioneta/SUV Grande',950:'Minivan'};
-    items.push({name:qty>1?('Interior carro ('+cn[carroPrice]+') (x'+qty+')'):'Interior carro ('+cn[carroPrice]+')',price:carroPrice*qty,source:'manual'});
+    items.push({name:qty>1?('Interior carro ('+cn[carroPrice]+') (x'+qty+')'):'Interior carro ('+cn[carroPrice]+')',price:carroPrice*qty,source:'qty',key:'carro',qty:qty});
   }
   // AI items reflected via manual counters only
 
@@ -831,13 +829,38 @@ function calcular(){
   const tot=document.getElementById('total_section');
   if(!items.length){res.innerHTML='<p class="empty-msg">Agrega artículos o sube fotos 😊</p>';tot.style.display='none';}
   else{
-    res.innerHTML=items.map(i=>'<div class="res-item"><span class="rn">'+i.name+'</span><span class="ra">$'+i.price.toLocaleString("es-MX")+'</span></div>').join('');
+    res.innerHTML=items.map(function(i){
+      var k=i.key||'';
+      var btns='';
+      var bStyle='width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.6);background:transparent;color:#fff;font-size:0.8rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;';
+      if(i.source==='qty'){
+        btns='<div style="display:flex;align-items:center;gap:3px;margin-left:6px;">'
+          +'<button onclick="changeResQty(\'' +k+ '\',-1)" style="'+bStyle+'">−</button>'
+          +'<button onclick="changeResQty(\'' +k+ '\',1)" style="'+bStyle+'">+</button>'
+          +'</div>';
+      } else if(i.source==='salaL'){
+        btns='<div style="display:flex;align-items:center;gap:3px;margin-left:6px;">'
+          +'<button onclick="removeSalaLById(\'' +k+ '\')" style="'+bStyle+'">−</button>'
+          +'<button onclick="addSalaLById(\'' +k+ '\')" style="'+bStyle+'">+</button>'
+          +'</div>';
+      } else if(i.source==='tapete'){
+        btns='<div style="display:flex;align-items:center;gap:3px;margin-left:6px;">'
+          +'<button onclick="removeTapeteById(\'' +k+ '\')" style="'+bStyle+'">−</button>'
+          +'<button onclick="addTapeteById(\'' +k+ '\')" style="'+bStyle+'">+</button>'
+          +'</div>';
+      } else if(i.source==='escalera'){
+        btns='<div style="display:flex;align-items:center;gap:3px;margin-left:6px;">'
+          +'<button onclick="document.getElementById(&quot;escaleras&quot;).checked=false;calcular();" style="'+bStyle+'">−</button>'
+          +'</div>';
+      }
+      return '<div class="res-item" style="align-items:center;"><span class="rn">'+i.name+'</span><div style="display:flex;align-items:center;"><span class="ra">$'+i.price.toLocaleString('es-MX')+'</span>'+btns+'</div></div>';
+    }).join('');
     tot.style.display='block';
-    document.getElementById('total_amount').textContent=`${total.toLocaleString('es-MX')}`;
+    document.getElementById('total_amount').textContent=`$${total.toLocaleString('es-MX')}`;
     if(desc>0){
       document.getElementById('discount_info').innerHTML=
-        `<div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:3px 0;opacity:0.85;"><span>Subtotal</span><span>${sub.toLocaleString('es-MX')}</span></div>`+
-        `<div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:3px 0;opacity:0.85;"><span>Descuento combo (10%)</span><span>-${desc.toLocaleString('es-MX')}</span></div>`;
+        `<div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:3px 0;opacity:0.85;"><span>Subtotal</span><span>$${sub.toLocaleString('es-MX')}</span></div>`+
+        `<div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:3px 0;opacity:0.85;"><span>Descuento combo (10%)</span><span>-$${desc.toLocaleString('es-MX')}</span></div>`;
     }else{
       document.getElementById('discount_info').innerHTML='';
     }
@@ -845,6 +868,18 @@ function calcular(){
   generarMensaje(items,sub,desc,total);
 }
 
+function changeResQty(key,d){
+  var cur=qtys[key]||0;
+  var nv=cur+d;
+  if(nv<=0){qtys[key]=0;}else{qtys[key]=nv;}
+  var el=document.getElementById('qty_'+key);
+  if(el){el.textContent=qtys[key]||0;}
+  calcular();
+}
+function removeSalaLById(id){var nid=parseFloat(id)||id;salasL=salasL.filter(s=>s.id!=nid);renderSalasL();calcular();}
+function addSalaLById(id){var nid=parseFloat(id)||id;var s=salasL.find(function(x){return x.id==nid;});if(s){salasL.push({id:Date.now(),tipo:s.tipo});renderSalasL();calcular();}}
+function removeTapeteById(id){var nid=parseFloat(id)||id;tapetes=tapetes.filter(t=>t.id!=nid);renderTapetes();calcular();}
+function addTapeteById(id){var nid=parseFloat(id)||id;var t=tapetes.find(function(x){return x.id==nid;});if(t){tapetes.push({id:Date.now(),tipo:t.tipo,medida:t.medida});renderTapetes();calcular();}}
 function generarMensaje(items,sub,desc,total){
   const el=document.getElementById('msg_preview');
   if(!items.length){el.textContent='';el.dataset.msg='';return;}
@@ -1133,8 +1168,10 @@ function bloquearHorario(){
   var startH=slotMap[hora]||8;
   var allSlots=['8:00 AM','8:30 AM','9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM','12:00 PM','12:30 PM','1:00 PM','1:30 PM','2:00 PM','2:30 PM','3:00 PM','3:30 PM','4:00 PM','4:30 PM','5:00 PM'];
   var toBlock=allSlots.filter(function(s){return slotMap[s]>=startH && slotMap[s]<startH+dur;});
-  horariosBloqueados.push({fecha:fecha,horas:toBlock,nota:nota,id:Date.now()});
+  var bloq={fecha:fecha,horas:toBlock,nota:nota,id:Date.now()};
+  horariosBloqueados.push(bloq);
   localStorage.setItem('cmhmo_bloq',JSON.stringify(horariosBloqueados));
+  try{if(db) db.collection('bloqueados').doc(String(bloq.id)).set(bloq);}catch(e){}
   alert('🚫 Bloqueado: '+hora+' ('+dur+'h)');
   renderBloqueados();
 }
@@ -1142,12 +1179,16 @@ function bloquearHorario(){
 function desbloquear(id){
   horariosBloqueados=horariosBloqueados.filter(function(b){return b.id!==id;});
   localStorage.setItem('cmhmo_bloq',JSON.stringify(horariosBloqueados));
+  try{if(db) db.collection('bloqueados').doc(String(id)).delete();}catch(e){}
   renderBloqueados();
 }
 
 function renderBloqueados(){
   var c=document.getElementById('lista_bloqueados');
   if(!c) return;
+  try{if(db){db.collection('bloqueados').get().then(function(snap){snap.forEach(function(doc){var fb=doc.data();var idx=horariosBloqueados.findIndex(function(b){return b.id==fb.id;});if(idx<0)horariosBloqueados.push(fb);else horariosBloqueados[idx]=fb;});localStorage.setItem('cmhmo_bloq',JSON.stringify(horariosBloqueados));_doRenderBloq(c);}).catch(function(){_doRenderBloq(c);});return;}}catch(e){}
+  _doRenderBloq(c);
+  function _doRenderBloq(c){
   if(!horariosBloqueados.length){c.innerHTML='<span style="color:var(--muted);">Sin horarios bloqueados</span>';return;}
   var h='';
   horariosBloqueados.forEach(function(b){
@@ -1157,6 +1198,7 @@ function renderBloqueados(){
       +'</div>';
   });
   c.innerHTML=h;
+  } // end _doRenderBloq
 }
 
 function mostrarGracias(){
@@ -1484,8 +1526,10 @@ function agregarGasto(){
   if(!monto){alert('Ingresa un monto válido');return;}
   var ma = getMesAnio();
   var mesFinal = ma.mes==='anual'?new Date().getMonth():ma.mes;
-  gastos.push({id:Date.now(), cat:cat, monto:monto, nota:nota, mes:mesFinal, anio:ma.anio});
+  var g={id:Date.now(), cat:cat, monto:monto, nota:nota, mes:mesFinal, anio:ma.anio};
+  gastos.push(g);
   localStorage.setItem('cmhmo_gastos', JSON.stringify(gastos));
+  try{if(db) db.collection('gastos').doc(String(g.id)).set(g);}catch(e){}
   document.getElementById('gasto_monto').value='';
   document.getElementById('gasto_nota').value='';
   renderPanelClientes();
@@ -1494,6 +1538,7 @@ function agregarGasto(){
 function eliminarGasto(id){
   gastos = gastos.filter(function(g){return g.id!==id;});
   localStorage.setItem('cmhmo_gastos', JSON.stringify(gastos));
+  try{if(db) db.collection('gastos').doc(String(id)).delete();}catch(e){}
   renderPanelClientes();
 }
 
@@ -1519,6 +1564,8 @@ function renderPanelClientes(){
   try{if(db){db.collection('solicitudes').orderBy('id','desc').limit(500).get().then(function(snap){snap.forEach(function(doc){var fs=doc.data();var idx=solicitudes.findIndex(function(s){return s.id===fs.id;});if(idx<0)solicitudes.push(fs);else solicitudes[idx]=fs;});localStorage.setItem('cmhmo_sols',JSON.stringify(solicitudes));_doRPC();}).catch(function(){_doRPC();});return;}}catch(e){}
   _doRPC();
   function _doRPC(){
+  // Sync gastos from Firestore
+  try{if(db){db.collection('gastos').get().then(function(snap){snap.forEach(function(doc){var fg=doc.data();var idx=gastos.findIndex(function(g){return g.id==fg.id;});if(idx<0)gastos.push(fg);else gastos[idx]=fg;});localStorage.setItem('cmhmo_gastos',JSON.stringify(gastos));}).catch(function(){});}}catch(e){}
   var ma=getMesAnio();
   var ingresos=getIngresosDelMes(ma.mes,ma.anio);
   var totalGastos=getGastosDelMes(ma.mes,ma.anio);
