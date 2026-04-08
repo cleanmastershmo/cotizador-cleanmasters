@@ -1786,51 +1786,54 @@ renderTapetes();renderSalasL();calcular();renderAdminPanel();renderBloqueados();
 
 // ── Real-time Firestore listeners ──────────────────────────────
 (function initListeners(){
-  if(!db) return;
-  db.collection('solicitudes').orderBy('id','desc').limit(500).onSnapshot(function(snap){
-    snap.docChanges().forEach(function(change){
-      var d=change.doc.data();
-      if(change.type==='removed'){
-        solicitudes=solicitudes.filter(function(s){return s.id!=d.id;});
+  if(!db){ console.log('Sin Firestore, modo local'); return; }
+  console.log('Iniciando listeners...');
+
+  db.collection('solicitudes').onSnapshot(function(snap){
+    snap.docChanges().forEach(function(c){
+      var d=c.doc.data();
+      if(c.type==='removed'){
+        solicitudes=solicitudes.filter(function(s){return String(s.id)!==String(d.id);});
       } else {
-        var i=solicitudes.findIndex(function(s){return s.id==d.id;});
+        var i=solicitudes.findIndex(function(s){return String(s.id)===String(d.id);});
         if(i<0) solicitudes.push(d); else solicitudes[i]=d;
       }
     });
     localStorage.setItem('cmhmo_sols',JSON.stringify(solicitudes));
     renderAdminPanel();
     var pc=document.getElementById('panel_clientes');
-    if(pc && pc.style.display!=='none') renderPanelClientes();
-  },function(e){console.log('sols listener:',e);});
+    if(pc&&pc.style.display!=='none') renderPanelClientes();
+  },function(e){console.error('Solicitudes error:',e.code,e.message);});
 
   db.collection('gastos').onSnapshot(function(snap){
-    snap.docChanges().forEach(function(change){
-      var d=change.doc.data();
-      if(change.type==='removed'){
-        gastos=gastos.filter(function(g){return g.id!=d.id;});
+    snap.docChanges().forEach(function(c){
+      var d=c.doc.data();
+      if(c.type==='removed'){
+        gastos=gastos.filter(function(g){return String(g.id)!==String(d.id);});
       } else {
-        var i=gastos.findIndex(function(g){return g.id==d.id;});
+        var i=gastos.findIndex(function(g){return String(g.id)===String(d.id);});
         if(i<0) gastos.push(d); else gastos[i]=d;
       }
     });
     localStorage.setItem('cmhmo_gastos',JSON.stringify(gastos));
-    var pc2=document.getElementById('panel_clientes');
-    if(pc2 && pc2.style.display!=='none') renderPanelClientes();
-  },function(e){console.log('gastos listener:',e);});
+    var pc=document.getElementById('panel_clientes');
+    if(pc&&pc.style.display!=='none') renderPanelClientes();
+  },function(e){console.error('Gastos error:',e.code,e.message);});
 
   db.collection('bloqueados').onSnapshot(function(snap){
-    snap.docChanges().forEach(function(change){
-      var d=change.doc.data();
-      if(change.type==='removed'){
-        horariosBloqueados=horariosBloqueados.filter(function(b){return b.id!=d.id;});
+    snap.docChanges().forEach(function(c){
+      var d=c.doc.data();
+      if(c.type==='removed'){
+        horariosBloqueados=horariosBloqueados.filter(function(b){return String(b.id)!==String(d.id);});
       } else {
-        var i=horariosBloqueados.findIndex(function(b){return b.id==d.id;});
+        var i=horariosBloqueados.findIndex(function(b){return String(b.id)===String(d.id);});
         if(i<0) horariosBloqueados.push(d); else horariosBloqueados[i]=d;
       }
     });
     localStorage.setItem('cmhmo_bloq',JSON.stringify(horariosBloqueados));
     renderBloqueados();
-  },function(e){console.log('bloq listener:',e);});
+  },function(e){console.error('Bloqueados error:',e.code,e.message);});
+
 })();
 // Set default month/year selector
 (function(){
