@@ -747,7 +747,7 @@ Si no detectas artículos con tela: {"items":[],"notes":"No se detectaron mueble
 }
 
 function toggleAiItem(pid,idx,checked){photos=photos.map(p=>p.id!==pid?p:{...p,aiItems:p.aiItems.map((it,i)=>i===idx?{...it,confirmed:checked}:it)});calcular();}
-function changeAiQty(pid,idx,d){photos=photos.map(p=>p.id!==pid?p:{...p,aiItems:p.aiItems.map((it,i)=>i===idx?{...it,qty:Math.max(1,it.qty+d)}:it)});calcular();}
+function changeAiQty(pid,idx,d){photos=photos.map(p=>p.id!==pid?p:{...p,aiItems:p.aiItems.map((it,i)=>{if(i!==idx)return it;var nq=it.qty+d;if(nq<=0)return null;return{...it,qty:nq};}).filter(Boolean)});calcular();}
 
 function renderAiResults(){
   const c=document.getElementById('aiResults');
@@ -1516,29 +1516,23 @@ function getGastosDelMes(mes, anio){
 }
 
 function renderPanelClientes(){
-  var ma = getMesAnio();
-  var ingresos = getIngresosDelMes(ma.mes, ma.anio);
-  var totalGastos = getGastosDelMes(ma.mes, ma.anio);
-  var utilidad = ingresos - totalGastos;
-
-  // Stats
-  document.getElementById('stat_ingresos').textContent = '$'+ingresos.toLocaleString('es-MX');
-  document.getElementById('stat_gastos').textContent = '$'+totalGastos.toLocaleString('es-MX');
-  document.getElementById('stat_utilidad').textContent = '$'+utilidad.toLocaleString('es-MX');
-  var cu = document.getElementById('card_utilidad');
-  cu.style.background = utilidad>=0 ? 'linear-gradient(135deg,#28a745,#20c997)' : 'linear-gradient(135deg,#dc3545,#c0392b)';
-
-  // Servicios confirmados del mes
-  var servsDelMes = solicitudes.filter(function(s){
-    if(s.estado!=='confirmada') return false;
-    var d = new Date(s.fecha+'T12:00:00');
-    return d.getMonth()===ma.mes && d.getFullYear()===ma.anio;
-  });
-
-  renderGastosDelMes(ma.mes, ma.anio);
+  try{if(db){db.collection('solicitudes').orderBy('id','desc').limit(500).get().then(function(snap){snap.forEach(function(doc){var fs=doc.data();var idx=solicitudes.findIndex(function(s){return s.id===fs.id;});if(idx<0)solicitudes.push(fs);else solicitudes[idx]=fs;});localStorage.setItem('cmhmo_sols',JSON.stringify(solicitudes));_doRPC();}).catch(function(){_doRPC();});return;}}catch(e){}
+  _doRPC();
+  function _doRPC(){
+  var ma=getMesAnio();
+  var ingresos=getIngresosDelMes(ma.mes,ma.anio);
+  var totalGastos=getGastosDelMes(ma.mes,ma.anio);
+  var utilidad=ingresos-totalGastos;
+  document.getElementById('stat_ingresos').textContent='$'+ingresos.toLocaleString('es-MX');
+  document.getElementById('stat_gastos').textContent='$'+totalGastos.toLocaleString('es-MX');
+  document.getElementById('stat_utilidad').textContent='$'+utilidad.toLocaleString('es-MX');
+  var cu=document.getElementById('card_utilidad');
+  cu.style.background=utilidad>=0?'linear-gradient(135deg,#28a745,#20c997)':'linear-gradient(135deg,#dc3545,#c0392b)';
+  renderGastosDelMes(ma.mes,ma.anio);
   renderGraficaMeses();
-  renderServiciosDelMes(ma.mes, ma.anio);
+  renderServiciosDelMes(ma.mes,ma.anio);
   renderListaClientes();
+  }
 }
 
 function renderGastosDelMes(mes, anio){
