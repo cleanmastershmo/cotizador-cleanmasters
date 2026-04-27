@@ -1044,20 +1044,7 @@ function prepararEnvio(){
 function renderAdminPanel(){
   var c=document.getElementById('admin_solicitudes');
   if(!c) return;
-  // Sync from Firestore for cross-device access
-  try {
-    if(!db) { _doRenderAdmin(); return; }
-    db.collection('solicitudes').orderBy('id','desc').limit(200).get().then(function(snap){
-      snap.forEach(function(doc){
-        var fs=doc.data();
-        var idx=solicitudes.findIndex(function(s){return s.id===fs.id;});
-        if(idx<0) solicitudes.push(fs);
-        else solicitudes[idx]=fs;
-      });
-      localStorage.setItem('cmhmo_sols',JSON.stringify(solicitudes));
-      _doRenderAdmin();
-    }).catch(function(){ _doRenderAdmin(); });
-  } catch(e){ _doRenderAdmin(); }
+  _doRenderAdmin();
   function _doRenderAdmin(){
   var pend=solicitudes.filter(function(s){return s.estado==='pendiente';});
   if(!pend.length){c.innerHTML='<p style="font-size:0.82rem;color:var(--muted);text-align:center;padding:8px;">Sin solicitudes pendientes</p>';return;}
@@ -1096,6 +1083,8 @@ function confirmarSol(id){
   try { if(db) db.collection('solicitudes').doc(String(id)).update({estado:'confirmada'}); } catch(e){}
   alert('✅ Confirmado: '+sol.nombre+' · '+sol.fechaStr+' · '+sol.hora+' · '+dur+'h');
   renderAdminPanel();
+  var pc=document.getElementById('panel_clientes');
+  if(pc&&pc.style.display!=='none') renderPanelClientes();
 }
 
 function cancelarSol(id){
