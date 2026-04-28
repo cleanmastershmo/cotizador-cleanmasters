@@ -1079,7 +1079,7 @@ function confirmarSol(id){
   try{if(db) db.collection('bloqueados').doc(String(bloqCS.id)).set(bloqCS);}catch(e){}
   solicitudes=solicitudes.map(function(s){return s.id===id?Object.assign({},s,{estado:'confirmada'}):s;});
   localStorage.setItem('cmhmo_sols',JSON.stringify(solicitudes));
-  guardarCliente(sol);
+  try { guardarCliente(sol); } catch(e){ console.warn('guardarCliente error (non-blocking):', e.message); }
   try { if(db) db.collection('solicitudes').doc(String(id)).update({estado:'confirmada'}); } catch(e){}
   alert('✅ Confirmado: '+sol.nombre+' · '+sol.fechaStr+' · '+sol.hora+' · '+dur+'h');
   renderAdminPanel();
@@ -1508,7 +1508,7 @@ function guardarCliente(sol){
     clientes[idx].visitas = (clientes[idx].visitas||1)+1;
     clientes[idx].totalGastado = (clientes[idx].totalGastado||0)+totalNum;
     clientes[idx].ultimaVisita = hoy;
-    if(!clientes[idx].historial) clientes[idx].historial=[];
+    if(!Array.isArray(clientes[idx].historial)) clientes[idx].historial=[];
     clientes[idx].historial.push({fecha:sol.fechaStr||hoy, total:totalNum, hora:sol.hora||''});
   } else {
     clientes.push({id:Date.now(), nombre:sol.nombre, cel:sol.cel, dir:sol.dir||'',
